@@ -21,10 +21,10 @@ struct usr_tcp_buf_s
 	uint16_t len;
 };
 
-__packed struct mode_config
+__packed struct mode_pso
 {
-		/*模式*/
-		uint8_t mode_type;
+	/*模式*/
+	uint8_t mode_type;
     /*L值*/
     uint8_t l_cnt;
     /*Tc值*/
@@ -33,14 +33,30 @@ __packed struct mode_config
     uint8_t delay_time_ns;
     /*wait max time值*/
     uint8_t wait_max_time;
-		/*模式3输出占空比*/
+	/*padding*/
+	uint8_t tmp[3];
+};
+
+__packed struct mode_fix_fre
+{
+	/*模式*/
+	uint8_t mode_type;
+	/*模式2输出占空比*/
     uint8_t duty;
-		/*模式3输出频率值*/
+	/*模式3输出频率值*/
     uint32_t fre;
-		/*cmp值*/
-    uint32_t l_cmp;
-		/*运行状态*/
-		uint8_t run_state;
+	/*padding*/
+	uint8_t tmp[2];
+};
+
+__packed struct mode_config
+{
+	struct mode_pso mode1;
+	struct mode_fix_fre mode2;
+	/*l_cnt 模式列表*/
+	uint8_t gap[15];
+	/*运行状态*/
+	uint8_t run_state;
 };
 
 struct edge_s
@@ -62,8 +78,8 @@ struct edge_recored_s
 
 void handle_cmd_data(void);
 void usr_tcp_send_data(void *data, uint16_t lens);
-void start_mode1_2(void);
-void set_mode1_2(void);
+void start_work(void);
+void set_mode1(void);
 void sort(uint16_t *a, uint16_t len);
 #endif /* __INPUT_CAP_TIMER_H */
 

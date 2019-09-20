@@ -82,41 +82,41 @@ extern struct mode_config g_mode_config_data;
   */
 int main(void)
 {
-  /* STM32F4xx HAL library initialization:
-       - Configure the Flash prefetch, instruction and Data caches
-       - Configure the Systick to generate an interrupt each 1 msec
-       - Set NVIC Group Priority to 4
-       - Global MSP (MCU Support Package) initialization
-     */
-  HAL_Init();  
-  
-  /* Configure the system clock to 168 MHz */
-  SystemClock_Config();
-  
-  /* Configure the BSP */
-  BSP_Config();
-    
-  /* Initialize the LwIP stack */
-  lwip_init();
-  
-  /* Configure the Network interface */
-  Netif_Config();
-  
-  /* tcp echo server Init */
-  tcp_echoserver_init();
-  
-  /* Notify user about the network interface config */
-  User_notification(&gnetif);
+	/* STM32F4xx HAL library initialization:
+	   - Configure the Flash prefetch, instruction and Data caches
+	   - Configure the Systick to generate an interrupt each 1 msec
+	   - Set NVIC Group Priority to 4
+	   - Global MSP (MCU Support Package) initialization
+	 */
+	HAL_Init();  
+
+	/* Configure the system clock to 168 MHz */
+	SystemClock_Config();
+
+	/* Configure the BSP */
+	BSP_Config();
+
+	/* Initialize the LwIP stack */
+	lwip_init();
+
+	/* Configure the Network interface */
+	Netif_Config();
+
+	/* tcp echo server Init */
+	tcp_echoserver_init();
+
+	/* Notify user about the network interface config */
+	User_notification(&gnetif);
 
 	read_config_par(&g_mode_config_data,sizeof(g_mode_config_data));
 
-	set_mode1_2();
+	set_mode1();
 	
 	/* Infinite loop */
-  while (1)
-  {  
-		start_mode1_2();
-  }
+	while (1)
+	{  
+		start_work();
+	}
 }
 
 void tcp_pkg_handle()
@@ -125,9 +125,9 @@ void tcp_pkg_handle()
 	{
 		/* Read a received packet from the Ethernet buffers and send it 
 		 to the lwIP for handling */
-    ethernetif_input(&gnetif);
-    /* Handle timeouts */
-    sys_check_timeouts();
+		ethernetif_input(&gnetif);
+		/* Handle timeouts */
+		sys_check_timeouts();
 		
 		handle_cmd_data();
 	}

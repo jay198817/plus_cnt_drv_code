@@ -38,7 +38,12 @@ C 输出管脚通过参数配置可以为PA0-PA9，作为模式3时，只能PA1输出
 
 #define  TICK_PER_SECOND   1000
 #define  PIN_PLUS_OUTPUT   GPIOB,GPIO_PIN_9
-#define  PIN_PLUS_EN       GPIOD,GPIO_PIN_4
+
+#define  GAP_MODE_INPUT_PIN0       GPIOD,GPIO_PIN_4
+#define  GAP_MODE_INPUT_PIN1       GPIOD,GPIO_PIN_5
+#define  GAP_MODE_INPUT_PIN2       GPIOD,GPIO_PIN_6
+#define  GAP_MODE_INPUT_PIN3       GPIOD,GPIO_PIN_7
+
 #define  PIN_HIGH          1
 #define  PIN_LOW           0
 
@@ -86,8 +91,8 @@ void input_cap_init()
     __HAL_TIM_SET_COUNTER(&TimHandle1,0);
     HAL_TIM_Base_Start(&TimHandle1);
 	
-		/*timer2 初始化为计数模式，ETR*/
-		TimHandle2.Instance = TIM2; 
+	/*timer2 初始化为计数模式，ETR*/
+	TimHandle2.Instance = TIM2; 
     TimHandle2.Init.Prescaler = 0; 
     TimHandle2.Init.CounterMode=TIM_COUNTERMODE_UP; 
     TimHandle2.Init.Period=0xFFFF; 
@@ -102,8 +107,8 @@ void input_cap_init()
     __HAL_TIM_SET_COUNTER(&TimHandle2,0);
     HAL_TIM_Base_Start(&TimHandle2);
 	
-		/*timer3 初始化为计数模式，ETR*/
-		TimHandle3.Instance = TIM3; 
+	/*timer3 初始化为计数模式，ETR*/
+	TimHandle3.Instance = TIM3; 
     TimHandle3.Init.Prescaler = 0; 
     TimHandle3.Init.CounterMode=TIM_COUNTERMODE_UP; 
     TimHandle3.Init.Period=0xFFFF; 
@@ -118,7 +123,7 @@ void input_cap_init()
     __HAL_TIM_SET_COUNTER(&TimHandle3,0);
     HAL_TIM_Base_Start(&TimHandle3);
 
-		/*timer4 初始化为计数模式，ETR*/
+	/*timer4 初始化为计数模式，ETR*/
     TimHandle4.Instance = TIM4; 
     TimHandle4.Init.Prescaler = 0; 
     TimHandle4.Init.CounterMode=TIM_COUNTERMODE_UP; 
@@ -150,7 +155,7 @@ void input_cap_init()
     __HAL_TIM_SET_COUNTER(&TimHandle8,0);
     HAL_TIM_Base_Start(&TimHandle8);    
     
-		/*timer7 初始化为普通定时器*/
+	/*timer7 初始化为普通定时器*/
     TimHandle7.Instance = TIM7; 
     TimHandle7.Init.Prescaler = TIM7_PVALUE_1K; 
     TimHandle7.Init.CounterMode=TIM_COUNTERMODE_UP; 
@@ -159,7 +164,7 @@ void input_cap_init()
     HAL_TIM_Base_Init(&TimHandle7);
     HAL_TIM_Base_Start_IT(&TimHandle7);
 		
-		/*timer9 初始化为普通定时器*/
+	/*timer9 初始化为普通定时器*/
     TimHandle9.Instance = TIM9; 
     TimHandle9.Init.Prescaler = TIM9_PVALUE_10M; 
     TimHandle9.Init.CounterMode=TIM_COUNTERMODE_UP; 
@@ -175,8 +180,7 @@ void pwm_output_conifg(uint32_t fre, float duty)
     TIM_OC_InitTypeDef sConfig; 
     uint32_t uhPrescalerValue,period_value;
     
-	
-		HAL_TIM_Base_DeInit(&TimHandle4);
+	HAL_TIM_Base_DeInit(&TimHandle4);
 	
     /*tim4时钟为84M*/
     uhPrescalerValue = (uint32_t)((SystemCoreClock /2)/84000000) - 1;
@@ -189,7 +193,7 @@ void pwm_output_conifg(uint32_t fre, float duty)
     TimHandle4.Init.CounterMode = TIM_COUNTERMODE_UP;
     HAL_TIM_PWM_Init(&TimHandle4);
 	
-		TIM_ClockConfigTypeDef sClockSourceConfig;
+	TIM_ClockConfigTypeDef sClockSourceConfig;
     sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
     sClockSourceConfig.ClockPolarity = TIM_ETRPOLARITY_NONINVERTED;
     sClockSourceConfig.ClockPrescaler = TIM_ETRPRESCALER_DIV1;
@@ -239,9 +243,9 @@ static uint16_t wait_sync_plus(uint16_t wait_us)
     {
         return 1;
     }
-        
     while(wait_us)
     {
+		/*TimHandle8作为计数器，当有同步信号输入时，则跳出*/
         if(__HAL_TIM_GET_COUNTER(&TimHandle8)>0)
         {
             __HAL_TIM_SET_COUNTER(&TimHandle8,0);
@@ -253,17 +257,17 @@ static uint16_t wait_sync_plus(uint16_t wait_us)
     return 0;
 }
 
-static void set_mode3()
+static void set_mode2(void)
 {
     uint32_t frequence;
     float duty;
-    frequence = g_mode_config_data.fre;
-    duty = g_mode_config_data.duty/100.0f;
+    frequence = g_mode_config_data.mode2.fre;
+    duty = g_mode_config_data.mode2.duty/100.0f;
     pwm_output_conifg(frequence,duty);
 }
 
 
-float total_conut()
+float total_conut(void)
 {
     uint32_t a1 = __HAL_TIM_GET_COUNTER(&TimHandle1);
     uint32_t a2 = __HAL_TIM_GET_COUNTER(&TimHandle2);
@@ -275,57 +279,62 @@ float total_conut()
     return a*a+b*b;
 }
 
-void start_mode1_2(void)
+static uint8_t get_input_mode(void)
 {
-		static uint8_t pre_mode_type=0,pre_en_state=0;
-    float counts=0;
-    struct mode_config *cfg_data;
-    static uint32_t  cnt_cmp =0;
-    cfg_data = &g_mode_config_data;
+	uint8_t bit0,bit1,bit2,bit3;
+	/*读取四个输入的状态*/
+	bit0 = !HAL_GPIO_ReadPin(GAP_MODE_INPUT_PIN0);
+	bit1 = !HAL_GPIO_ReadPin(GAP_MODE_INPUT_PIN1);
+	bit2 = !HAL_GPIO_ReadPin(GAP_MODE_INPUT_PIN2);
+	bit3 = !HAL_GPIO_ReadPin(GAP_MODE_INPUT_PIN3);
+	return bit0+(bit1<<1)+(bit2<<2)+(bit3<<3);
+}
+
+
+void start_work(void)
+{
+	static uint8_t pre_mode_type=0,pre_en_state=0;
+	float counts=0;
+	struct mode_config *cfg_data;
+	static uint32_t  cnt_cmp =0;
+	cfg_data = &g_mode_config_data;
  
-		if((cfg_data->mode_type ==1)||(cfg_data->mode_type ==2))
+	if(cfg_data->run_state ==1)
     {
-				cnt_cmp= cfg_data->l_cmp*100/4;
-				if((pre_mode_type !=1)&&(pre_mode_type!=2))
-				{
-					pre_mode_type=cfg_data->mode_type;
-					set_mode1_2();
-				}
-        if(0 == HAL_GPIO_ReadPin(PIN_PLUS_EN))
+		if(pre_mode_type !=1)
+		{
+			pre_mode_type=cfg_data->run_state;
+			set_mode1();
+		}
+        if(0 < get_input_mode())
         {   
-//						if(pre_en_state ==0)
-//						{
-//							if (check_plus_type()== 0)
-//							{
-//								return;
-//							}
-//							pre_en_state=1;
-//						}
+			/*通过软件设定的模式值以及输入管脚选择的模式，最终确定cnt_cmp值*/
+			cnt_cmp = cfg_data->gap[get_input_mode()-1]*100/4;
             counts = total_conut();
             if(counts>=cnt_cmp)
             {
                 reset_counter3_4();
                 /*等待同步信号*/
-                if(wait_sync_plus(cfg_data->wait_max_time))
+                if(wait_sync_plus(cfg_data->mode1.wait_max_time))
                 {
-                    delay_100ns(cfg_data->delay_time_ns);
-                    one_plus_init_send(cfg_data->c_duration);
+                    delay_100ns(cfg_data->mode1.delay_time_ns);
+                    one_plus_init_send(cfg_data->mode1.c_duration);
                 }
             }
-       }
-			 else
-			 {
-				 pre_en_state=0;
-			 }
-    }
-		else if(cfg_data->mode_type ==3)
-		{
-			if(pre_mode_type !=3)
-			{
-					pre_mode_type =3;
-					set_mode3();
-			}
 		}
+		else
+		{
+			pre_en_state=0;
+		}
+    }
+	else if(cfg_data->run_state ==2)
+	{
+		if(pre_mode_type !=2)
+		{
+			pre_mode_type =2;
+			set_mode2();
+		}
+	}
 }
 
 
@@ -335,18 +344,18 @@ void pin_config(void)
 	__HAL_RCC_GPIOB_CLK_ENABLE();
 	__HAL_RCC_GPIOD_CLK_ENABLE();
 	
-  GPIO_InitStructure.Pin = GPIO_PIN_9;
-  GPIO_InitStructure.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStructure.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);
-	
-  GPIO_InitStructure.Pin = GPIO_PIN_4;
-  GPIO_InitStructure.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStructure.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(GPIOD, &GPIO_InitStructure);
+	GPIO_InitStructure.Pin = GPIO_PIN_9;
+	GPIO_InitStructure.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStructure.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStructure);
+	/* 作为输入引脚 X0-X3*/
+	GPIO_InitStructure.Pin = GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7;
+	GPIO_InitStructure.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStructure.Pull = GPIO_PULLUP;
+	HAL_GPIO_Init(GPIOD, &GPIO_InitStructure);
 }
 
-void set_mode1_2(void)
+void set_mode1(void)
 {
    /*输入脉冲计数器初始化*/
     pin_config();
@@ -380,7 +389,7 @@ uint8_t  recored_plus(uint16_t max_wait_time_us)
 	return 1;
 }
 
-uint8_t  parse_plus()
+uint8_t parse_plus(void)
 {
 	float ratio;
 	uint8_t i,j;
@@ -438,24 +447,37 @@ void handle_cmd_data(void)
 	uint8_t ret=1;
 	if(input_cmd_buf.len)
 	{
-		if((input_cmd_buf.buf[0] == CMD_HEAD_H)&&(input_cmd_buf.buf[1] == CMD_HEAD_L))
+		/*配置模式1的参数*/
+		if((input_cmd_buf.buf[0] == CMD_HEAD_H)&&(input_cmd_buf.buf[1] == CMD_HEAD_L)&&(input_cmd_buf.buf[2] ==1))
 		{
-				memcpy(&g_mode_config_data,&input_cmd_buf.buf[2],input_cmd_buf.len);
-				g_mode_config_data.l_cmp = g_mode_config_data.l_cnt*g_mode_config_data.l_cnt;
-			
-				write_config_par(&g_mode_config_data,sizeof(g_mode_config_data));
-				ret=0;
+			memcpy(&g_mode_config_data.mode1,&input_cmd_buf.buf[2],8);
+			g_mode_config_data.run_state =1;
+			write_config_par(&g_mode_config_data,sizeof(g_mode_config_data));
+			ret=0;
 		}
-		clear_usr_buf();
-		
+		/*配置模式2的参数*/
+		if((input_cmd_buf.buf[0] == CMD_HEAD_H)&&(input_cmd_buf.buf[1] == CMD_HEAD_L)&&(input_cmd_buf.buf[2] ==2))
+		{
+			memcpy(&g_mode_config_data.mode2,&input_cmd_buf.buf[2],8);
+			g_mode_config_data.run_state =2;
+			write_config_par(&g_mode_config_data,sizeof(g_mode_config_data));
+			ret=0;
+		}
+		/*配置计数间隔模式值，总共15个模式，每个模式对应一个值*/
+		if((input_cmd_buf.buf[0] == CMD_HEAD_H)&&(input_cmd_buf.buf[1] == CMD_HEAD_L)&&(input_cmd_buf.buf[2] ==3))
+		{
+			memcpy(&g_mode_config_data.gap,&input_cmd_buf.buf[2],15);
+			write_config_par(&g_mode_config_data,sizeof(g_mode_config_data));
+			ret=0;
+		}		
+		clear_usr_buf();		
 		reply_cmd_buf.len = 10+2;
 		reply_cmd_buf.buf[0] =CMD_HEAD_H;
 		reply_cmd_buf.buf[1] =CMD_HEAD_L;
-		memcpy(&reply_cmd_buf.buf[2],&g_mode_config_data,reply_cmd_buf.len);
+		memcpy(&reply_cmd_buf.buf[2],&g_mode_config_data,sizeof(g_mode_config_data));
 
-		usr_tcp_send_data(reply_cmd_buf.buf, reply_cmd_buf.len);
+		usr_tcp_send_data(reply_cmd_buf.buf, sizeof(g_mode_config_data));
 	}
-
 }
 
 void sort(uint16_t *a, uint16_t len)
