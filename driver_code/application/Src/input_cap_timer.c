@@ -24,6 +24,7 @@ C 输出管脚通过参数配置可以为PA0-PA9，作为模式3时，只能PA1输出
 #include "stm32f4xx_hal.h"
 #include "input_cap_timer.h"
 
+
 #define FRE_10M      10000000
 #define FRE_1K       1000
 
@@ -291,6 +292,8 @@ static uint8_t get_input_mode(void)
 }
 
 
+
+
 void start_work(void)
 {
 	static uint8_t pre_mode_type=0,pre_en_state=0;
@@ -309,7 +312,7 @@ void start_work(void)
         if(0 < get_input_mode())
         {   
 			/*通过软件设定的模式值以及输入管脚选择的模式，最终确定cnt_cmp值*/
-			cnt_cmp = cfg_data->gap[get_input_mode()-1]*100/4;
+			cnt_cmp = cfg_data->gap[get_input_mode()-1]*cfg_data->gap[get_input_mode()-1]*100/4;
             counts = total_conut();
             if(counts>=cnt_cmp)
             {
@@ -466,7 +469,7 @@ void handle_cmd_data(void)
 		/*配置计数间隔模式值，总共15个模式，每个模式对应一个值*/
 		if((input_cmd_buf.buf[0] == CMD_HEAD_H)&&(input_cmd_buf.buf[1] == CMD_HEAD_L)&&(input_cmd_buf.buf[2] ==3))
 		{
-			memcpy(&g_mode_config_data.gap,&input_cmd_buf.buf[2],15);
+			memcpy(&g_mode_config_data.gap,&input_cmd_buf.buf[3],15);
 			write_config_par(&g_mode_config_data,sizeof(g_mode_config_data));
 			ret=0;
 		}		
@@ -478,6 +481,23 @@ void handle_cmd_data(void)
 
 		usr_tcp_send_data(reply_cmd_buf.buf, sizeof(g_mode_config_data));
 	}
+}
+
+void test(void)
+{
+	uint8_t test_data1[]={85,170,1,1,50,50,200,0,0,0};
+	uint8_t test_data2[]={85,170,2,50,232,3,0,0,0,0};
+	uint8_t test_data3[]={85,170,3,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+
+	memcpy(input_cmd_buf.buf,test_data2,8);
+	input_cmd_buf.len=8;
+	handle_cmd_data();
+	memcpy(input_cmd_buf.buf,test_data3,15);
+	input_cmd_buf.len=15;
+	handle_cmd_data();
+	memcpy(input_cmd_buf.buf,test_data1,8);
+	input_cmd_buf.len=8;
+	handle_cmd_data();
 }
 
 void sort(uint16_t *a, uint16_t len)

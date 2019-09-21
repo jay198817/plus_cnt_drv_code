@@ -869,13 +869,13 @@ ARM Macro Assembler    Page 14
               00000000 
               00000000 
 Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M4.fp --apcs=int
-erwork --depend=stm324xg_eval\startup_stm32f407xx.d -ostm324xg_eval\startup_stm
-32f407xx.o -IROJ_DIR$\..\Inc -I"E:\自研发项目归档\脉冲计数模块_2019-7-6\07 单板
-软件\plus_cnt_drv_code\driver_code\Projects\RTE" -Id:\Keil_v5\ARM\PACK\ARM\CMSI
-S\4.2.0\CMSIS\Include -Id:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.13.0 --predefi
-ne="__MICROLIB SETA 1" --predefine="__UVISION_VERSION SETA 514" --predefine="_R
-TE_ SETA 1" --predefine="STM32F407xx SETA 1" --list=startup_stm32f407xx.lst sta
-rtup_stm32f407xx.s
+erwork --depend=.\stm324xg_eval\startup_stm32f407xx.d -o.\stm324xg_eval\startup
+_stm32f407xx.o -IROJ_DIR$\..\Inc -I"E:\自研发项目归档\脉冲计数模块_2019-7-6\07 
+单板软件\plus_cnt_drv_code\driver_code\Projects\RTE" -Id:\Keil_v5\ARM\PACK\ARM\
+CMSIS\4.2.0\CMSIS\Include -Id:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.13.0 --pre
+define="__MICROLIB SETA 1" --predefine="__UVISION_VERSION SETA 514" --predefine
+="_RTE_ SETA 1" --predefine="STM32F407xx SETA 1" --list=startup_stm32f407xx.lst
+ startup_stm32f407xx.s
 
 
 

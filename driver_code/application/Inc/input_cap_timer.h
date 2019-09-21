@@ -81,6 +81,7 @@ void usr_tcp_send_data(void *data, uint16_t lens);
 void start_work(void);
 void set_mode1(void);
 void sort(uint16_t *a, uint16_t len);
+void test(void);
 #endif /* __INPUT_CAP_TIMER_H */
 
 

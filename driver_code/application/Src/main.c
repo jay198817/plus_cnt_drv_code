@@ -112,6 +112,7 @@ int main(void)
 
 	set_mode1();
 	
+	//test();
 	/* Infinite loop */
 	while (1)
 	{  
